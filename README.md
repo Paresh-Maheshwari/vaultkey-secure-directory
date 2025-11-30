@@ -2,6 +2,12 @@
 
 A modern, secure contact management Progressive Web App (PWA) with offline support and encryption.
 
+## 🌐 Live Demo
+
+**[https://vaultkey-secure-directory.vercel.app/](https://vaultkey-secure-directory.vercel.app/)**
+
+Try it now! Install as PWA for offline access.
+
 ## ✨ Features
 
 - 📱 **Progressive Web App** - Install on any device, works offline
