@@ -1,0 +1,5 @@
+{
+  "name": "VaultKey Secure Directory",
+  "description": "A secure contact management system with directory-level access control and flexible data storage for banking details.",
+  "requestFramePermissions": []
+}
