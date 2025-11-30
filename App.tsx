@@ -36,17 +36,28 @@ const Icons = {
 };
 
 // Memoized Contact Row Component
-const ContactRow = memo(({ contact, onViewClick, onEditClick, onQRClick, onDeleteClick }: { 
+const ContactRow = memo(({ contact, onViewClick, onEditClick, onQRClick, onDeleteClick, isFavorite, onToggleFavorite }: { 
   contact: Contact; 
   onViewClick: (contact: Contact) => void;
   onEditClick: (contact: Contact) => void;
   onQRClick: (contact: Contact) => void;
   onDeleteClick: (contact: Contact) => void;
+  isFavorite: boolean;
+  onToggleFavorite: (id: string) => void;
 }) => (
-  <tr key={contact.id} className="hover:bg-blue-50/30 dark:hover:bg-slate-700/30 transition-colors group cursor-pointer" onClick={() => onViewClick(contact)}>
-    <td className="px-3 sm:px-6 py-3 sm:py-4">
-      <div className="flex items-center gap-2 sm:gap-3">
-        <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex-shrink-0 overflow-hidden ${!contact.photo ? 'bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900 dark:to-indigo-900 text-blue-600 dark:text-blue-300' : ''} flex items-center justify-center font-bold text-xs sm:text-sm`}>
+  <tr key={contact.id} className="hover:bg-blue-50/30 dark:hover:bg-slate-700/30 transition-colors group cursor-pointer border-b border-gray-100 dark:border-slate-700" onClick={() => onViewClick(contact)}>
+    <td className="px-1 sm:px-6 py-2 sm:py-4">
+      <div className="flex items-center gap-0.5 sm:gap-3">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleFavorite(contact.id);
+          }}
+          className="text-base sm:text-lg flex-shrink-0"
+        >
+          {isFavorite ? '⭐' : '☆'}
+        </button>
+        <div className={`w-7 h-7 sm:w-10 sm:h-10 rounded-full flex-shrink-0 overflow-hidden ${!contact.photo ? 'bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900 dark:to-indigo-900 text-blue-600 dark:text-blue-300' : ''} flex items-center justify-center font-bold text-[10px] sm:text-sm`}>
           {contact.photo ? (
             <img src={contact.photo} alt="" className="w-full h-full object-cover" />
           ) : (
@@ -54,7 +65,7 @@ const ContactRow = memo(({ contact, onViewClick, onEditClick, onQRClick, onDelet
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="font-semibold text-sm sm:text-base text-gray-900 dark:text-gray-100 truncate max-w-[120px] sm:max-w-[200px]" title={`${contact.firstName} ${contact.lastName}`}>
+          <div className="font-semibold text-xs sm:text-base text-gray-900 dark:text-gray-100 truncate max-w-[120px] sm:max-w-[200px]" title={`${contact.firstName} ${contact.lastName}`}>
             {contact.firstName} {contact.lastName}
           </div>
           <div className="text-xs text-gray-400 truncate max-w-[120px] sm:max-w-[200px] sm:hidden" title={contact.emails[0]?.value}>
@@ -64,7 +75,7 @@ const ContactRow = memo(({ contact, onViewClick, onEditClick, onQRClick, onDelet
         </div>
       </div>
     </td>
-    <td className="px-3 sm:px-6 py-3 sm:py-4 hidden sm:table-cell">
+    <td className="px-1 sm:px-6 py-2 sm:py-4 hidden sm:table-cell">
       <div className="flex flex-col text-sm space-y-1">
          {contact.emails.length > 0 && (
             <span className="text-gray-700 dark:text-gray-300 flex items-center gap-1 truncate">
@@ -81,14 +92,14 @@ const ContactRow = memo(({ contact, onViewClick, onEditClick, onQRClick, onDelet
          )}
       </div>
     </td>
-    <td className="px-3 sm:px-6 py-3 sm:py-4">
-      <div className="flex items-center justify-end gap-1 sm:gap-2">
+    <td className="px-1 sm:px-6 py-2 sm:py-4">
+      <div className="flex items-center justify-end gap-0 sm:gap-2">
         <button
           onClick={(e) => {
             e.stopPropagation();
             onQRClick(contact);
           }}
-          className="p-1.5 sm:p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          className="p-0.5 sm:p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
           title="Show QR Code"
         >
           <Icons.QrCode />
@@ -98,7 +109,7 @@ const ContactRow = memo(({ contact, onViewClick, onEditClick, onQRClick, onDelet
             e.stopPropagation();
             onEditClick(contact);
           }}
-          className="p-1.5 sm:p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          className="p-0.5 sm:p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
           title="Edit Contact"
         >
           <Icons.Edit />
@@ -108,7 +119,7 @@ const ContactRow = memo(({ contact, onViewClick, onEditClick, onQRClick, onDelet
             e.stopPropagation();
             onViewClick(contact);
           }}
-          className="p-1.5 sm:p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors hidden sm:inline-flex"
+          className="p-0.5 sm:p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors hidden sm:inline-flex"
           title="View Details"
         >
           <Icons.Eye />
@@ -118,7 +129,7 @@ const ContactRow = memo(({ contact, onViewClick, onEditClick, onQRClick, onDelet
             e.stopPropagation();
             onDeleteClick(contact);
           }}
-          className="p-1.5 sm:p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+          className="p-0.5 sm:p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
           title="Delete Contact"
         >
           <Icons.Trash />
@@ -126,6 +137,92 @@ const ContactRow = memo(({ contact, onViewClick, onEditClick, onQRClick, onDelet
       </div>
     </td>
   </tr>
+));
+
+// Memoized Contact Card Component for Mobile
+const ContactCard = memo(({ contact, onViewClick, onEditClick, onQRClick, onDeleteClick, isFavorite, onToggleFavorite }: { 
+  contact: Contact; 
+  onViewClick: (contact: Contact) => void;
+  onEditClick: (contact: Contact) => void;
+  onQRClick: (contact: Contact) => void;
+  onDeleteClick: (contact: Contact) => void;
+  isFavorite: boolean;
+  onToggleFavorite: (id: string) => void;
+}) => (
+  <div 
+    id={`contact-${contact.id}`}
+    className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-slate-700 hover:shadow-md transition-shadow"
+  >
+    <div className="flex items-start gap-3">
+      <div className={`w-12 h-12 rounded-full flex-shrink-0 overflow-hidden ${!contact.photo ? 'bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900 dark:to-indigo-900 text-blue-600 dark:text-blue-300' : ''} flex items-center justify-center font-bold text-sm`}>
+        {contact.photo ? (
+          <img src={contact.photo} alt="" className="w-full h-full object-cover" />
+        ) : (
+          <span>{contact.firstName?.[0]}{contact.lastName?.[0]}</span>
+        )}
+      </div>
+      
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+              {contact.firstName} {contact.lastName}
+            </h3>
+            {contact.position && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{contact.position}</p>
+            )}
+          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFavorite(contact.id);
+            }}
+            className="text-xl"
+          >
+            {isFavorite ? '⭐' : '☆'}
+          </button>
+        </div>
+        
+        {contact.emails.length > 0 && (
+          <a href={`mailto:${contact.emails[0].value}`} className="text-xs text-blue-600 dark:text-blue-400 block mt-2 truncate">
+            {contact.emails[0].value}
+          </a>
+        )}
+        {contact.phones.length > 0 && (
+          <a href={`tel:${contact.phones[0].value}`} className="text-xs text-gray-600 dark:text-gray-400 block mt-1">
+            {contact.phones[0].value}
+          </a>
+        )}
+        
+        <div className="flex items-center gap-2 mt-3">
+          <button
+            onClick={() => onQRClick(contact)}
+            className="flex-1 px-2 py-1.5 text-xs bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded hover:bg-purple-100 dark:hover:bg-purple-900/30 flex items-center justify-center"
+          >
+            <Icons.QrCode />
+          </button>
+          <button
+            onClick={() => onEditClick(contact)}
+            className="flex-1 px-2 py-1.5 text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 flex items-center justify-center"
+          >
+            <Icons.Edit />
+          </button>
+          <button
+            onClick={() => onViewClick(contact)}
+            className="flex-1 px-2 py-1.5 text-xs bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-slate-600 flex items-center justify-center"
+          >
+            <Icons.Eye />
+          </button>
+          <button
+            onClick={() => onDeleteClick(contact)}
+            className="px-2 py-1.5 text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded hover:bg-red-100 dark:hover:bg-red-900/30 flex items-center justify-center"
+          >
+            <Icons.Trash />
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 ));
 
 // --- Helpers ---
@@ -381,6 +478,12 @@ export default function App() {
   // QR Code state
   const [qrCodeDataURL, setQrCodeDataURL] = useState<string>('');
 
+  // Mobile view state
+  const [listViewMode, setListViewMode] = useState<'table' | 'card'>('table');
+  const [filterMode, setFilterMode] = useState<'all' | 'favorites' | 'recent'>('all');
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -407,6 +510,12 @@ export default function App() {
       setContacts(migratedContacts);
     };
     loadData();
+    
+    // Load favorites
+    const savedFavorites = localStorage.getItem('favorites');
+    if (savedFavorites) {
+      setFavorites(new Set(JSON.parse(savedFavorites)));
+    }
   }, []);
 
   const filteredContacts = useMemo(() => {
@@ -451,19 +560,34 @@ export default function App() {
     });
   }, [contacts, searchQuery, sortField, sortOrder]);
 
+  // Apply filters
+  const displayContacts = useMemo(() => {
+    let filtered = [...filteredContacts];
+    
+    if (filterMode === 'favorites') {
+      filtered = filtered.filter(c => favorites.has(c.id));
+    } else if (filterMode === 'recent') {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      filtered = filtered.filter(c => new Date(c.createdAt) >= sevenDaysAgo);
+    }
+    
+    return filtered;
+  }, [filteredContacts, filterMode, favorites]);
+
   // Paginated contacts for performance
   const paginatedContacts = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    return filteredContacts.slice(startIndex, endIndex);
-  }, [filteredContacts, currentPage, itemsPerPage]);
+    return displayContacts.slice(startIndex, endIndex);
+  }, [displayContacts, currentPage, itemsPerPage]);
 
-  const totalPages = Math.ceil(filteredContacts.length / itemsPerPage);
+  const totalPages = Math.ceil(displayContacts.length / itemsPerPage);
 
   // Reset to first page when search changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery]);
+  }, [searchQuery, filterMode]);
 
   const toggleSortOrder = () => {
     setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -539,6 +663,24 @@ export default function App() {
       link.href = qrCodeDataURL;
       link.click();
     }
+  };
+
+  const toggleFavorite = (contactId: string) => {
+    const newFavorites = new Set(favorites);
+    if (newFavorites.has(contactId)) {
+      newFavorites.delete(contactId);
+    } else {
+      newFavorites.add(contactId);
+    }
+    setFavorites(newFavorites);
+    localStorage.setItem('favorites', JSON.stringify([...newFavorites]));
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    // Simulate refresh
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setIsRefreshing(false);
   };
 
   const openQRModal = async (contact: Contact) => {
@@ -783,11 +925,79 @@ export default function App() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-4 sm:p-8 scroll-smooth custom-scrollbar bg-slate-50 dark:bg-slate-900">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8 scroll-smooth custom-scrollbar bg-slate-50 dark:bg-slate-900" onTouchStart={(e) => {
+          const startY = e.touches[0].clientY;
+          const handleTouchMove = (e: TouchEvent) => {
+            const currentY = e.touches[0].clientY;
+            if (currentY - startY > 100 && window.scrollY === 0) {
+              handleRefresh();
+            }
+          };
+          document.addEventListener('touchmove', handleTouchMove, { once: true });
+        }}>
+          
+          {/* Filter Chips */}
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setFilterMode('all')}
+              className={`px-3 py-1.5 text-xs sm:text-sm rounded-full transition-colors ${
+                filterMode === 'all'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              All ({contacts.length})
+            </button>
+            <button
+              onClick={() => setFilterMode('favorites')}
+              className={`px-3 py-1.5 text-xs sm:text-sm rounded-full transition-colors flex items-center gap-1 ${
+                filterMode === 'favorites'
+                  ? 'bg-yellow-500 text-white'
+                  : 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              ⭐ Favorites ({favorites.size})
+            </button>
+            <button
+              onClick={() => setFilterMode('recent')}
+              className={`px-3 py-1.5 text-xs sm:text-sm rounded-full transition-colors ${
+                filterMode === 'recent'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              🕒 Recent
+            </button>
+            
+            {/* View Toggle (Mobile Only) */}
+            <div className="ml-auto flex items-center gap-1 bg-gray-100 dark:bg-slate-800 rounded-lg p-0.5 sm:hidden">
+              <button
+                onClick={() => setListViewMode('table')}
+                className={`p-1.5 rounded ${listViewMode === 'table' ? 'bg-white dark:bg-slate-700 text-blue-600' : 'text-gray-500'}`}
+                title="Table View"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/></svg>
+              </button>
+              <button
+                onClick={() => setListViewMode('card')}
+                className={`p-1.5 rounded ${listViewMode === 'card' ? 'bg-white dark:bg-slate-700 text-blue-600' : 'text-gray-500'}`}
+                title="Card View"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+              </button>
+            </div>
+          </div>
+          
+          {isRefreshing && (
+            <div className="text-center py-2 text-sm text-blue-600 dark:text-blue-400">
+              Refreshing...
+            </div>
+          )}
+          
           <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
               Address Book
-              <span className="ml-2 text-sm font-normal text-gray-400">({filteredContacts.length} contacts)</span>
+              <span className="ml-2 text-sm font-normal text-gray-400">({displayContacts.length} contacts)</span>
             </h2>
             
             <div className="flex items-center gap-2">
@@ -814,9 +1024,11 @@ export default function App() {
             </div>
           </div>
 
+          {/* Table View (Desktop) or Card View (Mobile) */}
+          {listViewMode === 'table' ? (
           <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[800px]">
+              <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-gray-50 dark:bg-slate-700/50 border-b border-gray-100 dark:border-slate-700 text-xs uppercase tracking-wider text-gray-500 dark:text-slate-400 font-medium">
                     <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm">Name</th>
@@ -834,6 +1046,8 @@ export default function App() {
                         onEditClick={openEditModal}
                         onQRClick={openQRModal}
                         onDeleteClick={setContactToDelete}
+                        isFavorite={favorites.has(contact.id)}
+                        onToggleFavorite={toggleFavorite}
                       />
                     ))
                   ) : (
@@ -890,6 +1104,88 @@ export default function App() {
               </div>
             )}
           </div>
+          ) : (
+            /* Card View for Mobile */
+            <div className="space-y-3">
+              {paginatedContacts.length > 0 ? (
+                paginatedContacts.map(contact => (
+                  <ContactCard
+                    key={contact.id}
+                    contact={contact}
+                    onViewClick={openViewModal}
+                    onEditClick={openEditModal}
+                    onQRClick={openQRModal}
+                    onDeleteClick={setContactToDelete}
+                    isFavorite={favorites.has(contact.id)}
+                    onToggleFavorite={toggleFavorite}
+                  />
+                ))
+              ) : (
+                <div className="text-center py-12 text-gray-400 dark:text-slate-500">
+                  No contacts found. Use "New" to get started.
+                </div>
+              )}
+              
+              {/* Pagination for Card View */}
+              {totalPages > 1 && (
+                <div className="flex flex-col items-center gap-3 pt-4">
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    Page {currentPage} of {totalPages}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1 text-xs border border-gray-300 dark:border-slate-600 rounded-md disabled:opacity-50"
+                    >
+                      Prev
+                    </button>
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`px-2 py-1 text-xs rounded-md ${
+                            currentPage === pageNum
+                              ? 'bg-blue-600 text-white'
+                              : 'border border-gray-300 dark:border-slate-600'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                    <button
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1 text-xs border border-gray-300 dark:border-slate-600 rounded-md disabled:opacity-50"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Floating Action Button (Mobile Only) */}
+          <button
+            onClick={openCreateModal}
+            className="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center sm:hidden z-10"
+            title="Add Contact"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+          </button>
         </div>
       </main>
 
