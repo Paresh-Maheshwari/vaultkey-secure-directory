@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import QRCode from 'qrcode';
 import { 
   Contact, 
   CustomField,
@@ -33,6 +34,99 @@ const Icons = {
   SortDesc: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="M11 12h10"/><path d="M11 8h10"/><path d="M11 4h10"/></svg>,
   QrCode: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><rect width="5" height="5" x="7" y="7"/><rect width="5" height="5" x="7" y="17"/><rect width="5" height="5" x="17" y="17"/><rect width="5" height="5" x="17" y="7"/></svg>,
 };
+
+// Memoized Contact Row Component
+const ContactRow = memo(({ contact, onViewClick, onEditClick, onQRClick, onDeleteClick }: { 
+  contact: Contact; 
+  onViewClick: (contact: Contact) => void;
+  onEditClick: (contact: Contact) => void;
+  onQRClick: (contact: Contact) => void;
+  onDeleteClick: (contact: Contact) => void;
+}) => (
+  <tr key={contact.id} className="hover:bg-blue-50/30 dark:hover:bg-slate-700/30 transition-colors group cursor-pointer" onClick={() => onViewClick(contact)}>
+    <td className="px-3 sm:px-6 py-3 sm:py-4">
+      <div className="flex items-center gap-2 sm:gap-3">
+        <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex-shrink-0 overflow-hidden ${!contact.photo ? 'bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900 dark:to-indigo-900 text-blue-600 dark:text-blue-300' : ''} flex items-center justify-center font-bold text-xs sm:text-sm`}>
+          {contact.photo ? (
+            <img src={contact.photo} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <span>{contact.firstName?.[0]}{contact.lastName?.[0]}</span>
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold text-sm sm:text-base text-gray-900 dark:text-gray-100 truncate max-w-[120px] sm:max-w-[200px]" title={`${contact.firstName} ${contact.lastName}`}>
+            {contact.firstName} {contact.lastName}
+          </div>
+          <div className="text-xs text-gray-400 truncate max-w-[120px] sm:max-w-[200px] sm:hidden" title={contact.emails[0]?.value}>
+            {contact.emails[0]?.value}
+          </div>
+          <div className="text-xs text-gray-400 truncate max-w-[120px] sm:max-w-[200px] hidden sm:block" title={contact.position}>{contact.position}</div>
+        </div>
+      </div>
+    </td>
+    <td className="px-3 sm:px-6 py-3 sm:py-4 hidden sm:table-cell">
+      <div className="flex flex-col text-sm space-y-1">
+         {contact.emails.length > 0 && (
+            <span className="text-gray-700 dark:text-gray-300 flex items-center gap-1 truncate">
+              {contact.emails[0].value}
+              {contact.emails.length > 1 && <span className="text-xs text-gray-400 bg-gray-100 dark:bg-slate-700 px-1 rounded">+{contact.emails.length - 1}</span>}
+            </span>
+         )}
+         {contact.phones.length > 0 && (
+            <span className="text-gray-600 dark:text-gray-400 flex items-center gap-1">
+              <span className="text-xs">{contact.phones[0].value}</span>
+              <span className="text-xs text-gray-400">{contact.phones[0].label}</span>
+              {contact.phones.length > 1 && <span className="text-xs text-gray-400 bg-gray-100 dark:bg-slate-700 px-1 rounded">+{contact.phones.length - 1}</span>}
+            </span>
+         )}
+      </div>
+    </td>
+    <td className="px-3 sm:px-6 py-3 sm:py-4">
+      <div className="flex items-center justify-end gap-1 sm:gap-2">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onQRClick(contact);
+          }}
+          className="p-1.5 sm:p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          title="Show QR Code"
+        >
+          <Icons.QrCode />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onEditClick(contact);
+          }}
+          className="p-1.5 sm:p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          title="Edit Contact"
+        >
+          <Icons.Edit />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onViewClick(contact);
+          }}
+          className="p-1.5 sm:p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors hidden sm:inline-flex"
+          title="View Details"
+        >
+          <Icons.Eye />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDeleteClick(contact);
+          }}
+          className="p-1.5 sm:p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+          title="Delete Contact"
+        >
+          <Icons.Trash />
+        </button>
+      </div>
+    </td>
+  </tr>
+));
 
 // --- Helpers ---
 
@@ -280,6 +374,13 @@ export default function App() {
   // Toast state
   const [toast, setToast] = useState<{message: string; type: 'success' | 'error'} | null>(null);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(50); // Show 50 contacts per page
+
+  // QR Code state
+  const [qrCodeDataURL, setQrCodeDataURL] = useState<string>('');
+
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -350,6 +451,20 @@ export default function App() {
     });
   }, [contacts, searchQuery, sortField, sortOrder]);
 
+  // Paginated contacts for performance
+  const paginatedContacts = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredContacts.slice(startIndex, endIndex);
+  }, [filteredContacts, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredContacts.length / itemsPerPage);
+
+  // Reset to first page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
   const toggleSortOrder = () => {
     setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
   };
@@ -417,10 +532,34 @@ export default function App() {
       setIsModalOpen(true);
   };
 
-  const openQRModal = (contact: Contact) => {
+  const downloadQRCode = () => {
+    if (qrCodeDataURL && selectedContact) {
+      const link = document.createElement('a');
+      link.download = `${selectedContact.firstName}_${selectedContact.lastName}_QR.png`;
+      link.href = qrCodeDataURL;
+      link.click();
+    }
+  };
+
+  const openQRModal = async (contact: Contact) => {
     setSelectedContact(contact);
     setViewMode('QR');
     setIsModalOpen(true);
+    
+    try {
+      const vcfData = generateVCF(contact, false);
+      const qrDataURL = await QRCode.toDataURL(vcfData, {
+        width: 250,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+      setQrCodeDataURL(qrDataURL);
+    } catch (error) {
+      console.error('Error generating QR code:', error);
+    }
   };
 
   const handleExportVCF = () => {
@@ -680,128 +819,26 @@ export default function App() {
               <table className="w-full text-left border-collapse min-w-[800px]">
                 <thead>
                   <tr className="bg-gray-50 dark:bg-slate-700/50 border-b border-gray-100 dark:border-slate-700 text-xs uppercase tracking-wider text-gray-500 dark:text-slate-400 font-medium">
-                    <th className="px-6 py-4">Name</th>
-                    <th className="px-6 py-4">Contact Info</th>
-                    <th className="px-6 py-4">Details</th>
-                    <th className="px-6 py-4">Secure Data</th>
-                    <th className="px-6 py-4 text-right">Actions</th>
+                    <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm">Name</th>
+                    <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm hidden sm:table-cell">Contact Info</th>
+                    <th className="px-3 sm:px-6 py-3 sm:py-4 text-right text-xs sm:text-sm">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50 dark:divide-slate-700">
-                  {filteredContacts.length > 0 ? (
-                    filteredContacts.map(contact => (
-                      <tr key={contact.id} className="hover:bg-blue-50/30 dark:hover:bg-slate-700/30 transition-colors group cursor-pointer" onClick={() => openViewModal(contact)}>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-full flex-shrink-0 overflow-hidden ${!contact.photo ? 'bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900 dark:to-indigo-900 text-blue-600 dark:text-blue-300' : ''} flex items-center justify-center font-bold text-sm`}>
-                              {contact.photo ? (
-                                <img src={contact.photo} alt="" className="w-full h-full object-cover" />
-                              ) : (
-                                <span>{contact.firstName?.[0]}{contact.lastName?.[0]}</span>
-                              )}
-                            </div>
-                            <div>
-                              <div className="font-semibold text-gray-900 dark:text-gray-100 truncate max-w-[180px]" title={`${contact.firstName} ${contact.lastName}`}>
-                                {contact.firstName} {contact.lastName}
-                                {contact.nickname && <span className="ml-2 text-xs font-normal text-gray-500">({contact.nickname})</span>}
-                              </div>
-                              <div className="text-xs text-gray-400 truncate max-w-[180px]" title={contact.position}>{contact.position}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col text-sm space-y-1">
-                             {contact.emails.length > 0 && (
-                                <span className="text-gray-700 dark:text-gray-300 flex items-center gap-1">
-                                  {contact.emails[0].value}
-                                  {contact.emails.length > 1 && <span className="text-xs text-gray-400 bg-gray-100 dark:bg-slate-700 px-1 rounded">+{contact.emails.length - 1}</span>}
-                                </span>
-                             )}
-                             {contact.phones.length > 0 && (
-                                <span className="text-gray-400 text-xs flex items-center gap-1">
-                                  {formatPhoneNumber(contact.phones[0].value)}
-                                  <span className="text-[10px] uppercase border border-gray-200 dark:border-slate-600 px-1 rounded">{contact.phones[0].label}</span>
-                                </span>
-                             )}
-                            {contact.website && <a href={ensureUrlProtocol(contact.website)} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-blue-500 hover:underline text-xs truncate max-w-[150px]">{contact.website}</a>}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col gap-1">
-                            {contact.company ? (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200 w-fit">
-                                  {contact.company}
-                                </span>
-                            ) : (
-                                <span className="text-gray-400 text-xs">-</span>
-                            )}
-                             {contact.department && <span className="text-xs text-gray-500 dark:text-gray-400">Dept: {contact.department}</span>}
-                             {contact.birthday && <span className="text-xs text-gray-500 dark:text-gray-400">🎂 {contact.birthday}</span>}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex flex-col gap-1">
-                            {contact.customFields.filter(f => f.isSensitive).length > 0 ? (
-                               <div className="text-xs text-amber-600 dark:text-amber-500 flex items-center gap-1">
-                                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                                 {contact.customFields.filter(f => f.isSensitive).length} secure field(s)
-                               </div>
-                            ) : (
-                              <span className="text-xs text-gray-300 dark:text-slate-600 italic">No sensitive data</span>
-                            )}
-                            {contact.customFields.filter(f => !f.isSensitive).length > 0 && (
-                                <div className="text-xs text-gray-400 mt-1">
-                                    +{contact.customFields.filter(f => !f.isSensitive).length} other fields
-                                </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
-                           <div className="flex justify-end gap-2">
-                             <button 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openQRModal(contact);
-                                }}
-                                className="text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 p-2 rounded-lg hover:bg-purple-50 dark:hover:bg-slate-700 transition-colors"
-                                title="Show QR Code"
-                              >
-                                  <Icons.QrCode />
-                              </button>
-                             <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openEditModal(contact);
-                              }}
-                              className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors"
-                              title="Edit Contact"
-                            >
-                                <Icons.Edit />
-                            </button>
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openViewModal(contact);
-                              }}
-                              className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors"
-                              title="View Details"
-                            >
-                                <Icons.Eye />
-                            </button>
-                            <button 
-                              onClick={(e) => promptDeleteContact(contact, e)}
-                              className="text-gray-400 hover:text-red-600 dark:hover:text-red-400 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-slate-700 transition-colors"
-                              title="Delete Contact"
-                            >
-                                <Icons.Trash />
-                            </button>
-                           </div>
-                        </td>
-                      </tr>
+                  {paginatedContacts.length > 0 ? (
+                    paginatedContacts.map(contact => (
+                      <ContactRow 
+                        key={contact.id} 
+                        contact={contact} 
+                        onViewClick={openViewModal}
+                        onEditClick={openEditModal}
+                        onQRClick={openQRModal}
+                        onDeleteClick={setContactToDelete}
+                      />
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={5} className="px-6 py-12 text-center text-gray-400 dark:text-slate-500">
+                      <td colSpan={3} className="px-6 py-12 text-center text-gray-400 dark:text-slate-500">
                         No contacts found. Use "New" to get started.
                       </td>
                     </tr>
@@ -809,6 +846,49 @@ export default function App() {
                 </tbody>
               </table>
             </div>
+            
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 py-4 border-t border-gray-200 dark:border-slate-700">
+                <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                  Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredContacts.length)} of {filteredContacts.length}
+                </div>
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="px-2 sm:px-3 py-1 text-xs sm:text-sm border border-gray-300 dark:border-slate-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-slate-700"
+                  >
+                    Prev
+                  </button>
+                  
+                  {/* Page Numbers */}
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-md transition-colors ${
+                          currentPage === page
+                            ? 'bg-blue-600 text-white'
+                            : 'border border-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  <button
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-2 sm:px-3 py-1 text-xs sm:text-sm border border-gray-300 dark:border-slate-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-slate-700"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </main>
@@ -829,19 +909,36 @@ export default function App() {
         ) : viewMode === 'QR' && selectedContact ? (
             <div className="flex flex-col items-center justify-center p-4">
               <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100 mb-4">
-                <img 
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(generateVCF(selectedContact, false))}`}
-                  alt="Contact QR Code"
-                  className="w-56 h-56"
-                />
+                {qrCodeDataURL ? (
+                  <img 
+                    src={qrCodeDataURL}
+                    alt="Contact QR Code"
+                    className="w-56 h-56"
+                  />
+                ) : (
+                  <div className="w-56 h-56 flex items-center justify-center bg-gray-100 rounded">
+                    <span className="text-gray-500">Generating QR Code...</span>
+                  </div>
+                )}
               </div>
               <p className="text-center text-sm text-gray-500 dark:text-gray-400">
                 Scan to add <span className="font-semibold text-gray-900 dark:text-white">{selectedContact.firstName} {selectedContact.lastName}</span> to your device.
               </p>
-              <div className="mt-6 flex justify-center w-full">
-                 <button onClick={() => setIsModalOpen(false)} className="px-6 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors font-medium text-sm">
-                   Done
-                 </button>
+              <div className="mt-6 flex gap-3 justify-center w-full">
+                <button 
+                  onClick={downloadQRCode}
+                  disabled={!qrCodeDataURL}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium text-sm flex items-center gap-2"
+                >
+                  <Icons.Download />
+                  Download QR
+                </button>
+                <button 
+                  onClick={() => setIsModalOpen(false)} 
+                  className="px-6 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors font-medium text-sm"
+                >
+                  Done
+                </button>
               </div>
             </div>
         ) : (
