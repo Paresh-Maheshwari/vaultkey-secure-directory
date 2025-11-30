@@ -9,6 +9,7 @@ import { StorageService } from './services/storage';
 import { Modal } from './components/Modal';
 import { ContactForm } from './components/ContactForm';
 import { ContactView } from './components/ContactView';
+import { Toast } from './components/Toast';
 import { formatPhoneNumber, generateVCF } from './utils';
 
 // --- Icons (Inline) ---
@@ -276,6 +277,9 @@ export default function App() {
   // Custom delete modal state
   const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
 
+  // Toast state
+  const [toast, setToast] = useState<{message: string; type: 'success' | 'error'} | null>(null);
+
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -421,7 +425,7 @@ export default function App() {
 
   const handleExportVCF = () => {
     if (filteredContacts.length === 0) {
-      alert("No contacts to export.");
+      setToast({message: "No contacts to export.", type: 'error'});
       return;
     }
     const vcfContent = filteredContacts.map(c => generateVCF(c, true)).join('\n');
@@ -479,13 +483,13 @@ export default function App() {
              await StorageService.saveContact(contact);
            }
            setContacts(prev => [...prev, ...importedContacts]);
-           alert(`Imported ${importedContacts.length} contacts successfully.`);
+           setToast({message: `Imported ${importedContacts.length} contacts successfully.`, type: 'success'});
         } else {
-           alert("No valid contacts found in file.");
+           setToast({message: "No valid contacts found in file.", type: 'error'});
         }
       } catch (err) {
         console.error(err);
-        alert("Failed to parse file.");
+        setToast({message: "Failed to parse file.", type: 'error'});
       }
     };
     reader.readAsText(file);
@@ -511,63 +515,100 @@ export default function App() {
         />
       )}
 
-      <aside className={`fixed inset-y-0 left-0 z-30 w-64 bg-slate-900 text-white flex flex-col flex-shrink-0 transition-transform duration-300 lg:static lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-30 w-64 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 text-gray-900 dark:text-white flex flex-col flex-shrink-0 transition-all duration-300 shadow-lg lg:static lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-6">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-              <div className="bg-blue-600 p-2 rounded-lg">
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-2.5 rounded-xl shadow-sm">
                 <Icons.AddressBook />
               </div>
-              <h1 className="text-xl font-bold tracking-tight">VaultKey</h1>
+              <div>
+                <h1 className="text-xl font-bold tracking-tight">VaultKey</h1>
+                <p className="text-xs text-gray-500 dark:text-slate-400">Secure Directory</p>
+              </div>
             </div>
-            <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-slate-400 hover:text-white">
+            <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-gray-400 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white p-1 rounded-md hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
               <Icons.X />
             </button>
           </div>
           
           <div className="space-y-6">
             <div>
-              <h2 className="text-xs uppercase text-slate-500 font-bold tracking-wider mb-4 px-2">Menu</h2>
+              <h2 className="text-xs uppercase text-gray-500 dark:text-slate-500 font-bold tracking-wider mb-3 px-2">Overview</h2>
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-4 border border-blue-100 dark:border-blue-800/30">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Contacts</span>
+                  <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">{contacts.length}</span>
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  {filteredContacts.length !== contacts.length && `${filteredContacts.length} filtered`}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-xs uppercase text-gray-500 dark:text-slate-500 font-bold tracking-wider mb-3 px-2">Navigation</h2>
               <nav className="space-y-1">
                 <button 
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors bg-blue-600 text-white`}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all bg-blue-600 text-white shadow-sm"
                 >
                   <Icons.Users />
-                  All Contacts
-                  <span className="ml-auto bg-blue-700 text-white py0.5 px-2 rounded-full text-xs">{contacts.length}</span>
+                  <span>All Contacts</span>
+                  <span className="ml-auto bg-blue-700/50 text-white py-0.5 px-2 rounded-full text-xs font-semibold">{contacts.length}</span>
+                </button>
+                <button 
+                  onClick={openCreateModal}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white"
+                >
+                  <Icons.Plus />
+                  <span>Add Contact</span>
                 </button>
               </nav>
             </div>
           </div>
         </div>
 
-        <div className="mt-auto p-4 border-t border-slate-800 space-y-4">
-           <div className="grid grid-cols-2 gap-2">
-             <button 
-                onClick={handleExportVCF}
-                className="flex items-center justify-center gap-2 py-2 px-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-medium text-slate-300 transition-colors"
-                title="Export for Mobile (vCard)"
-             >
-                <Icons.Phone /> Export
-             </button>
-             <button 
-                onClick={handleExportJSON}
-                className="flex items-center justify-center gap-2 py-2 px-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-medium text-slate-300 transition-colors"
-                title="Backup Data"
-             >
-                <Icons.Download /> Backup
-             </button>
+        <div className="mt-auto p-4 border-t border-gray-200 dark:border-slate-800 space-y-4">
+           <div>
+             <h3 className="text-xs uppercase text-gray-500 dark:text-slate-500 font-bold tracking-wider mb-3">Actions</h3>
+             <div className="space-y-2">
+               <button 
+                  onClick={handleExportVCF}
+                  className="w-full flex items-center gap-3 py-2.5 px-3 bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg text-sm font-medium text-gray-700 dark:text-slate-300 transition-colors"
+                  title="Export for Mobile (vCard)"
+               >
+                  <Icons.Phone />
+                  <span>Export VCF</span>
+               </button>
+               <button 
+                  onClick={handleExportJSON}
+                  className="w-full flex items-center gap-3 py-2.5 px-3 bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg text-sm font-medium text-gray-700 dark:text-slate-300 transition-colors"
+                  title="Backup Data"
+               >
+                  <Icons.Download />
+                  <span>Backup JSON</span>
+               </button>
+             </div>
            </div>
-           <div className="flex items-center justify-between px-1">
-              <span className="text-xs text-slate-500 font-medium">Theme</span>
-              <button onClick={toggleTheme} className="text-slate-400 hover:text-white transition-colors p-1 rounded hover:bg-slate-800">
-                {isDarkMode ? <Icons.Sun /> : <Icons.Moon />}
+           
+           <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-800 rounded-lg">
+              <div className="flex items-center gap-2">
+                {isDarkMode ? <Icons.Moon /> : <Icons.Sun />}
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {isDarkMode ? 'Dark' : 'Light'} Mode
+                </span>
+              </div>
+              <button 
+                onClick={toggleTheme} 
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isDarkMode ? 'bg-blue-600' : 'bg-gray-300'}`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isDarkMode ? 'translate-x-6' : 'translate-x-1'}`} />
               </button>
            </div>
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col overflow-hidden relative transition-all w-full">
+      <main className="flex-1 flex flex-col overflow-hidden relative transition-all w-full bg-slate-50 dark:bg-slate-900">
         <header className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 h-16 flex items-center justify-between px-4 sm:px-8 flex-shrink-0 z-10 transition-colors">
           <div className="flex items-center gap-4 flex-1">
             <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
@@ -603,7 +644,7 @@ export default function App() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-4 sm:p-8 scroll-smooth">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8 scroll-smooth custom-scrollbar bg-slate-50 dark:bg-slate-900">
           <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
               Address Book
@@ -660,11 +701,11 @@ export default function App() {
                               )}
                             </div>
                             <div>
-                              <div className="font-semibold text-gray-900 dark:text-gray-100">
+                              <div className="font-semibold text-gray-900 dark:text-gray-100 truncate max-w-[180px]" title={`${contact.firstName} ${contact.lastName}`}>
                                 {contact.firstName} {contact.lastName}
                                 {contact.nickname && <span className="ml-2 text-xs font-normal text-gray-500">({contact.nickname})</span>}
                               </div>
-                              <div className="text-xs text-gray-400">{contact.position}</div>
+                              <div className="text-xs text-gray-400 truncate max-w-[180px]" title={contact.position}>{contact.position}</div>
                             </div>
                           </div>
                         </td>
@@ -843,6 +884,15 @@ export default function App() {
             </div>
         </div>
       </Modal>
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={() => setToast(null)} 
+        />
+      )}
     </div>
   );
 }

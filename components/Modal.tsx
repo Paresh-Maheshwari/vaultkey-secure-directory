@@ -42,7 +42,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 18 12"/></svg>
           </button>
         </div>
-        <div className="p-6 overflow-y-auto text-gray-700 dark:text-gray-300">
+        <div className="p-6 overflow-y-auto text-gray-700 dark:text-gray-300 custom-scrollbar">
           {children}
         </div>
       </div>
